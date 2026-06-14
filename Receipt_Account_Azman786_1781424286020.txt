@@ -1,0 +1,11 @@
+==============================
+       ATM TRANSACTION       
+==============================
+
+ Account: Azman786
+ Type: Withdrawal
+ Amount: $33.00
+ Available Balance: $8734.00
+
+==============================
+      Thank you!             

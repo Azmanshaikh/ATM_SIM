@@ -213,6 +213,36 @@ public class AtmApp extends JFrame {
         }
     }
 
+    public void promptHistoricalReceipt(String date, String type, String amountStr) {
+        String receipt = String.format(
+            "==============================\n" +
+            "       ATM TRANSACTION       \n" +
+            "==============================\n\n" +
+            " Account: %s\n" +
+            " Date: %s\n" +
+            " Type: %s\n" +
+            " Amount: %s\n\n" +
+            "==============================\n" +
+            "      Thank you!             \n",
+            currentAccount.getAccountNumber(), date, type, amountStr
+        );
+        
+        Object[] options = {"Save to File", "Close"};
+        int saveChoice = JOptionPane.showOptionDialog(this, receipt, "Historical Receipt",
+                JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                null, options, options[1]);
+        
+        if (saveChoice == JOptionPane.YES_OPTION) {
+            try {
+                String filename = "Receipt_Account_" + currentAccount.getAccountNumber() + "_" + System.currentTimeMillis() + ".txt";
+                java.nio.file.Files.write(java.nio.file.Paths.get(filename), receipt.getBytes());
+                JOptionPane.showMessageDialog(this, "Receipt saved as:\n" + filename, "Saved", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception e) {
+                showError("Failed to save receipt: " + e.getMessage());
+            }
+        }
+    }
+
     public void handleChangePin(String newPin) {
         if (currentAccount != null) {
             if (dbManager.updatePin(currentAccount.getId(), newPin)) {

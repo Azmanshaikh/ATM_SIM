@@ -252,21 +252,81 @@ public class DatabaseManager {
         return false;
     }
 
-    public List<String> getAllAccountNumbers() {
+    public List<String> getAllAccountNumbersWithStatus() {
         List<String> accountNumbers = new ArrayList<>();
-        String sql = "SELECT account_number FROM accounts";
+        String sql = "SELECT account_number, is_locked FROM accounts";
         try (Connection conn = DriverManager.getConnection(URL);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
-                accountNumbers.add(rs.getString("account_number"));
+                String acc = rs.getString("account_number");
+                boolean locked = rs.getBoolean("is_locked");
+                if (locked) {
+                    accountNumbers.add(acc + " (LOCKED)");
+                } else {
+                    accountNumbers.add(acc);
+                }
             }
-            
         } catch (SQLException e) {
             System.err.println("Get all account numbers error: " + e.getMessage());
         }
         return accountNumbers;
+    }
+
+    public boolean unlockAccount(String accountNumber) {
+        String sql = "UPDATE accounts SET is_locked = 0, failed_attempts = 0 WHERE account_number = ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, accountNumber);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Unlock error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean deleteAccount(String accountNumber) {
+        String getSql = "SELECT id FROM accounts WHERE account_number = ?";
+        String delAccSql = "DELETE FROM accounts WHERE account_number = ?";
+        String delTransSql = "DELETE FROM transactions WHERE account_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement getStmt = conn.prepareStatement(getSql);
+                 PreparedStatement delAccStmt = conn.prepareStatement(delAccSql);
+                 PreparedStatement delTransStmt = conn.prepareStatement(delTransSql)) {
+                 
+                getStmt.setString(1, accountNumber);
+                ResultSet rs = getStmt.executeQuery();
+                if (!rs.next()) {
+                    conn.rollback();
+                    return false;
+                }
+                int accountId = rs.getInt("id");
+                
+                delTransStmt.setInt(1, accountId);
+                delTransStmt.executeUpdate();
+                
+                delAccStmt.setString(1, accountNumber);
+                int rows = delAccStmt.executeUpdate();
+                
+                if (rows > 0) {
+                    conn.commit();
+                    return true;
+                } else {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                conn.rollback();
+                System.err.println("Delete logic error: " + ex.getMessage());
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.err.println("Delete conn error: " + e.getMessage());
+        }
+        return false;
     }
 
     public List<Transaction> getTransactions(int accountId, String keyword) {

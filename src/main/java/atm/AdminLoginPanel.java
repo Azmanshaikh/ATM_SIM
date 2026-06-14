@@ -73,6 +73,9 @@ public class AdminLoginPanel extends JPanel {
         add(buttonPanel);
 
         // Actions
+        usernameField.addActionListener(e -> passwordField.requestFocusInWindow());
+        passwordField.addActionListener(e -> loginButton.doClick());
+
         loginButton.addActionListener(e -> {
             String user = usernameField.getText();
             String pass = new String(passwordField.getPassword());

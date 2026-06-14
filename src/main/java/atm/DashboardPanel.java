@@ -129,6 +129,8 @@ public class DashboardPanel extends JPanel {
         submitBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         submitBtn.setMaximumSize(new Dimension(300, 45));
         
+        amountField.addActionListener(e -> submitBtn.doClick());
+        
         submitBtn.addActionListener(e -> {
             try {
                 double amount = Double.parseDouble(amountField.getText());
@@ -148,18 +150,55 @@ public class DashboardPanel extends JPanel {
 
     private void showWithdrawDialog() {
         JDialog dialog = createStyledDialog("Withdraw Money");
-        JTextField amountField = createStyledTextField();
+        dialog.setSize(400, 480);
         
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBackground(BG_COLOR);
-        content.add(createStyledLabel("Enter amount to withdraw:"));
+        
+        content.add(createStyledLabel("Fast Cash:"));
         content.add(Box.createRigidArea(new Dimension(0, 10)));
+        
+        JPanel fastCashPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        fastCashPanel.setBackground(BG_COLOR);
+        fastCashPanel.setOpaque(false);
+        fastCashPanel.setMaximumSize(new Dimension(300, 100));
+        fastCashPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        JButton btn20 = createActionBtn("$20", CARD_COLOR);
+        JButton btn50 = createActionBtn("$50", CARD_COLOR);
+        JButton btn100 = createActionBtn("$100", CARD_COLOR);
+        JButton btn200 = createActionBtn("$200", CARD_COLOR);
+        
+        java.awt.event.ActionListener fastCashAction = e -> {
+            dialog.dispose();
+            double amount = Double.parseDouble(((JButton)e.getSource()).getText().replace("$", ""));
+            app.handleWithdraw(amount);
+        };
+        
+        btn20.addActionListener(fastCashAction);
+        btn50.addActionListener(fastCashAction);
+        btn100.addActionListener(fastCashAction);
+        btn200.addActionListener(fastCashAction);
+        
+        fastCashPanel.add(btn20);
+        fastCashPanel.add(btn50);
+        fastCashPanel.add(btn100);
+        fastCashPanel.add(btn200);
+        
+        content.add(fastCashPanel);
+        content.add(Box.createRigidArea(new Dimension(0, 30)));
+        
+        content.add(createStyledLabel("Or enter custom amount:"));
+        content.add(Box.createRigidArea(new Dimension(0, 5)));
+        JTextField amountField = createStyledTextField();
         content.add(amountField);
         
-        JButton submitBtn = createActionBtn("Confirm Withdrawal", DANGER_COLOR);
+        JButton submitBtn = createActionBtn("Withdraw Custom", DANGER_COLOR);
         submitBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         submitBtn.setMaximumSize(new Dimension(300, 45));
+        
+        amountField.addActionListener(e -> submitBtn.doClick());
         
         submitBtn.addActionListener(e -> {
             try {
@@ -200,6 +239,9 @@ public class DashboardPanel extends JPanel {
         submitBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         submitBtn.setMaximumSize(new Dimension(300, 45));
         
+        targetField.addActionListener(e -> amountField.requestFocusInWindow());
+        amountField.addActionListener(e -> submitBtn.doClick());
+        
         submitBtn.addActionListener(e -> {
             try {
                 double amount = Double.parseDouble(amountField.getText());
@@ -239,6 +281,9 @@ public class DashboardPanel extends JPanel {
         JButton submitBtn = createActionBtn("Update PIN", WARNING_COLOR);
         submitBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         submitBtn.setMaximumSize(new Dimension(300, 45));
+        
+        oldPinField.addActionListener(e -> newPinField.requestFocusInWindow());
+        newPinField.addActionListener(e -> submitBtn.doClick());
         
         submitBtn.addActionListener(e -> {
             String oldPin = new String(oldPinField.getPassword());
@@ -299,6 +344,19 @@ public class DashboardPanel extends JPanel {
         table.setForeground(TEXT_COLOR);
         table.setFillsViewportHeight(true);
         table.setRowHeight(30);
+
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2 && table.getSelectedRow() != -1) {
+                    int row = table.getSelectedRow();
+                    String date = (String) table.getValueAt(row, 0);
+                    String type = (String) table.getValueAt(row, 1);
+                    String amountStr = (String) table.getValueAt(row, 2);
+                    app.promptHistoricalReceipt(date, type, amountStr);
+                }
+            }
+        });
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.getViewport().setBackground(CARD_COLOR);
@@ -408,6 +466,7 @@ public class DashboardPanel extends JPanel {
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
+        button.setBorder(null); // Removes default borders completely
         button.setForeground(Color.WHITE);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));

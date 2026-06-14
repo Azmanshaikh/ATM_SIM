@@ -94,6 +94,9 @@ public class LoginPanel extends JPanel {
         add(adminBtn);
 
         // Actions
+        accountField.addActionListener(e -> pinField.requestFocusInWindow());
+        pinField.addActionListener(e -> loginButton.doClick());
+
         loginButton.addActionListener(e -> {
             String accNum = accountField.getText();
             String pin = new String(pinField.getPassword());
