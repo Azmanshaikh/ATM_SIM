@@ -30,6 +30,24 @@ public class DatabaseManager {
                     "is_locked BOOLEAN NOT NULL DEFAULT 0" +
                     ");";
             stmt.execute(createAccountsTableSQL);
+
+            // Schema migrations: add columns if they are missing in an older database
+            boolean hasFailedAttempts = false;
+            boolean hasIsLocked = false;
+            try (ResultSet rs = stmt.executeQuery("PRAGMA table_info(accounts)")) {
+                while (rs.next()) {
+                    String colName = rs.getString("name");
+                    if ("failed_attempts".equals(colName)) hasFailedAttempts = true;
+                    if ("is_locked".equals(colName)) hasIsLocked = true;
+                }
+            }
+
+            if (!hasFailedAttempts) {
+                stmt.execute("ALTER TABLE accounts ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0;");
+            }
+            if (!hasIsLocked) {
+                stmt.execute("ALTER TABLE accounts ADD COLUMN is_locked BOOLEAN NOT NULL DEFAULT 0;");
+            }
             
             // Transactions table
             String createTransactionsTableSQL = "CREATE TABLE IF NOT EXISTS transactions (" +
