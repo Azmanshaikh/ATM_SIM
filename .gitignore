@@ -1,0 +1,15 @@
+# Compiled class files
+out/
+target/
+*.class
+
+# Database file
+atm.db
+
+# Downloaded libraries
+lib/
+
+# IDE specific files
+.idea/
+*.iml
+.vscode/
