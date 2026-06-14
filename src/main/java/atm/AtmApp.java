@@ -70,6 +70,10 @@ public class AtmApp extends JFrame {
 
         Account account = dbManager.authenticate(accountNumber, pin);
         if (account != null) {
+            if (account.isLocked()) {
+                showError("ACCOUNT LOCKED. Too many failed login attempts.");
+                return;
+            }
             currentAccount = account;
             loginPanel.clearFields();
             dashboardPanel.updateAccountInfo();
@@ -117,9 +121,9 @@ public class AtmApp extends JFrame {
         if (currentAccount != null) {
             double currentBalance = dbManager.getBalance(currentAccount.getId());
             double newBalance = currentBalance + amount;
-            if (dbManager.updateBalance(currentAccount.getId(), newBalance)) {
-                JOptionPane.showMessageDialog(this, String.format("Successfully deposited $%.2f", amount), "Success", JOptionPane.INFORMATION_MESSAGE);
+            if (dbManager.updateBalance(currentAccount.getId(), newBalance, amount, "Deposit")) {
                 dashboardPanel.updateBalanceDisplay();
+                promptReceipt("Deposit", amount, newBalance);
             } else {
                 showError("Failed to deposit money.");
             }
@@ -140,9 +144,9 @@ public class AtmApp extends JFrame {
             }
 
             double newBalance = currentBalance - amount;
-            if (dbManager.updateBalance(currentAccount.getId(), newBalance)) {
-                JOptionPane.showMessageDialog(this, String.format("Successfully withdrew $%.2f", amount), "Success", JOptionPane.INFORMATION_MESSAGE);
+            if (dbManager.updateBalance(currentAccount.getId(), newBalance, amount, "Withdrawal")) {
                 dashboardPanel.updateBalanceDisplay();
+                promptReceipt("Withdrawal", amount, newBalance);
             } else {
                 showError("Failed to withdraw money.");
             }
@@ -154,6 +158,11 @@ public class AtmApp extends JFrame {
             showError("Transfer amount must be greater than zero.");
             return;
         }
+        
+        if (!dbManager.doesAccountExist(targetAccount)) {
+            showError("The destination account doesn't exist. Please verify the account number.");
+            return;
+        }
 
         if (currentAccount != null) {
             double currentBalance = dbManager.getBalance(currentAccount.getId());
@@ -163,11 +172,30 @@ public class AtmApp extends JFrame {
             }
 
             if (dbManager.transferFunds(currentAccount.getId(), targetAccount, amount)) {
-                JOptionPane.showMessageDialog(this, String.format("Successfully transferred $%.2f to Account %s", amount, targetAccount), "Success", JOptionPane.INFORMATION_MESSAGE);
                 dashboardPanel.updateBalanceDisplay();
+                promptReceipt("Transfer to " + targetAccount, amount, currentBalance - amount);
             } else {
-                showError("Transfer failed. Please verify the destination account number.");
+                showError("Transfer failed due to an unexpected error.");
             }
+        }
+    }
+
+    private void promptReceipt(String type, double amount, double newBalance) {
+        int choice = JOptionPane.showConfirmDialog(this, "Transaction Successful! Would you like a receipt?", "Receipt", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
+            String receipt = String.format(
+                "==============================\n" +
+                "       ATM TRANSACTION       \n" +
+                "==============================\n\n" +
+                " Account: %s\n" +
+                " Type: %s\n" +
+                " Amount: $%.2f\n" +
+                " Available Balance: $%.2f\n\n" +
+                "==============================\n" +
+                "      Thank you!             \n",
+                currentAccount.getAccountNumber(), type, amount, newBalance
+            );
+            JOptionPane.showMessageDialog(this, receipt, "Receipt", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

@@ -2,8 +2,10 @@ package atm;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
+import java.util.List;
 
 public class DashboardPanel extends JPanel {
     private AtmApp app;
@@ -18,6 +20,7 @@ public class DashboardPanel extends JPanel {
     private static final Color DANGER_COLOR = new Color(239, 68, 68); // Red
     private static final Color WARNING_COLOR = new Color(245, 158, 11); // Orange
     private static final Color INFO_COLOR = new Color(14, 165, 233); // Light Blue
+    private static final Color HISTORY_COLOR = new Color(139, 92, 246); // Purple
 
     public DashboardPanel(AtmApp app) {
         this.app = app;
@@ -75,7 +78,7 @@ public class DashboardPanel extends JPanel {
 
         // Center Buttons
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(2, 2, 20, 20)); // Grid 2x2 for larger screen
+        buttonPanel.setLayout(new GridLayout(3, 2, 20, 20)); // Grid 3x2 for extra button
         buttonPanel.setBackground(BG_COLOR);
         buttonPanel.setBorder(new EmptyBorder(20, 60, 40, 60));
         
@@ -83,10 +86,12 @@ public class DashboardPanel extends JPanel {
         JButton withdrawBtn = createActionBtn("Withdraw Money", DANGER_COLOR);
         JButton transferBtn = createActionBtn("Transfer Funds", INFO_COLOR);
         JButton changePinBtn = createActionBtn("Change PIN", WARNING_COLOR);
+        JButton historyBtn = createActionBtn("Transaction History", HISTORY_COLOR);
 
         buttonPanel.add(depositBtn);
         buttonPanel.add(withdrawBtn);
         buttonPanel.add(transferBtn);
+        buttonPanel.add(historyBtn);
         buttonPanel.add(changePinBtn);
 
         add(buttonPanel, BorderLayout.CENTER);
@@ -100,11 +105,12 @@ public class DashboardPanel extends JPanel {
         bottomPanel.add(logoutBtn);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // Handlers using custom styled dialogs
+        // Handlers
         depositBtn.addActionListener(e -> showDepositDialog());
         withdrawBtn.addActionListener(e -> showWithdrawDialog());
         transferBtn.addActionListener(e -> showTransferDialog());
         changePinBtn.addActionListener(e -> showChangePinDialog());
+        historyBtn.addActionListener(e -> showHistoryDialog());
         logoutBtn.addActionListener(e -> app.handleLogout());
     }
 
@@ -257,6 +263,67 @@ public class DashboardPanel extends JPanel {
         
         dialog.add(content);
         dialog.setVisible(true);
+    }
+
+    private void showHistoryDialog() {
+        JDialog dialog = new JDialog(app, "Transaction History", true);
+        dialog.setSize(550, 400);
+        dialog.setLocationRelativeTo(app);
+        dialog.getContentPane().setBackground(BG_COLOR);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        mainPanel.setBackground(BG_COLOR);
+
+        // Search Bar
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setBackground(BG_COLOR);
+        searchPanel.setBorder(new EmptyBorder(0, 0, 15, 0));
+        
+        JTextField searchField = createStyledTextField();
+        searchField.setPreferredSize(new Dimension(300, 40));
+        JButton searchBtn = createActionBtn("Search", HISTORY_COLOR);
+        
+        searchPanel.add(new JLabel(" "), BorderLayout.WEST); // padding
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.add(searchBtn, BorderLayout.EAST);
+
+        // Table
+        String[] columnNames = {"Date", "Type", "Amount"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable table = new JTable(tableModel);
+        table.setBackground(CARD_COLOR);
+        table.setForeground(TEXT_COLOR);
+        table.setFillsViewportHeight(true);
+        table.setRowHeight(30);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.getViewport().setBackground(CARD_COLOR);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(63, 63, 70)));
+
+        mainPanel.add(searchPanel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Load initial data
+        loadTransactionsIntoTable(tableModel, "");
+
+        searchBtn.addActionListener(e -> {
+            loadTransactionsIntoTable(tableModel, searchField.getText());
+        });
+
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+
+    private void loadTransactionsIntoTable(DefaultTableModel model, String keyword) {
+        model.setRowCount(0);
+        List<Transaction> txs = app.getDatabaseManager().getTransactions(app.getCurrentAccount().getId(), keyword);
+        for (Transaction t : txs) {
+            model.addRow(new Object[]{t.getTimestamp(), t.getType(), String.format("$%.2f", t.getAmount())});
+        }
     }
 
     // --- Utility Methods for UI Styling ---

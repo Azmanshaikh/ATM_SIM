@@ -5,12 +5,14 @@ public class Account {
     private String accountNumber;
     private String pin;
     private double balance;
+    private boolean isLocked;
 
-    public Account(int id, String accountNumber, String pin, double balance) {
+    public Account(int id, String accountNumber, String pin, double balance, boolean isLocked) {
         this.id = id;
         this.accountNumber = accountNumber;
         this.pin = pin;
         this.balance = balance;
+        this.isLocked = isLocked;
     }
 
     public int getId() {
@@ -31,5 +33,9 @@ public class Account {
 
     public void setBalance(double balance) {
         this.balance = balance;
+    }
+
+    public boolean isLocked() {
+        return isLocked;
     }
 }
