@@ -195,7 +195,21 @@ public class AtmApp extends JFrame {
                 "      Thank you!             \n",
                 currentAccount.getAccountNumber(), type, amount, newBalance
             );
-            JOptionPane.showMessageDialog(this, receipt, "Receipt", JOptionPane.INFORMATION_MESSAGE);
+            
+            Object[] options = {"Save to File", "Close"};
+            int saveChoice = JOptionPane.showOptionDialog(this, receipt, "Receipt",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                    null, options, options[1]);
+            
+            if (saveChoice == JOptionPane.YES_OPTION) {
+                try {
+                    String filename = "Receipt_Account_" + currentAccount.getAccountNumber() + "_" + System.currentTimeMillis() + ".txt";
+                    java.nio.file.Files.write(java.nio.file.Paths.get(filename), receipt.getBytes());
+                    JOptionPane.showMessageDialog(this, "Receipt saved as:\n" + filename, "Saved", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    showError("Failed to save receipt: " + e.getMessage());
+                }
+            }
         }
     }
 
